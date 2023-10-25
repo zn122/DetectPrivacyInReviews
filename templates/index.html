@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <!-- Webpage Title -->
+    <title>모두의 리뷰 | 제품 리뷰</title>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS 및 jQuery 라이브러리 불러오기 -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+
+    <!-- Bootstrap 스케치 스타일만 유지 -->
+    <link rel="stylesheet" href="https://bootswatch.com/4/sketchy/bootstrap.min.css">
+
+    <!-- 구글폰트 (Do Hyeon)만 유지 -->
+    <link href="https://fonts.googleapis.com/css?family=Do+Hyeon&display=swap" rel="stylesheet">
+
+    <style type="text/css">
+        * {
+            font-family: "Do Hyeon", sans-serif;
+        }
+
+        /* sketchy 스타일만 유지 */
+        /* 추가 sketchy 스타일 규칙을 기술하세요 */
+
+        h1 {
+        font-size: 55px; /* 원하는 크기로 조정하세요 */
+    }
+        h5 {
+            display: inline;
+        }
+
+        .info {
+            margin-top: 30px;
+            margin-bottom: 20px !important;
+        }
+
+        .review {
+            text-align: center;
+        }
+
+        .reviews {
+            margin-top: 100px;
+        }
+
+        .table th:nth-child(1) {
+            width: 20%;
+        }
+
+        .table th:nth-child(2) {
+            width: 10%;
+        }
+
+        .table th:nth-child(4) {
+            width: 5%;
+        }
+
+        .table th:nth-child(5) {
+            width: 15%;
+        }
+
+        .table th:nth-child(6) {
+            width: 10%;
+        }
+
+        .table th:nth-child(7) {
+            width: 5%;
+        }
+
+        .table th:nth-child(3) {
+            width: 30%;
+        }
+
+        .reviews-box td {
+            max-height: 50px;
+            overflow: hidden;
+        }
+
+        .review-image {
+            max-width: 50px;
+            max-height: 50px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.9);
+            padding-top: 60px;
+        }
+
+        .modal-content {
+            margin: auto;
+            display: block;
+            max-width: 80%;
+            max-height: 80%;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: #bbb;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        #modalImage {
+            max-width: 100%;
+            max-height: 100%;
+            width: auto;
+            height: auto;
+            margin: auto;
+            display: block;
+        }
+
+        .star-rating {
+            border: solid 1px #ccc;
+            display: flex;
+            flex-direction: row-reverse;
+            font-size: 1.5em;
+            justify-content: space-around;
+            padding: 0 .2em;
+            text-align: center;
+            width: 5em;
+        }
+
+        .star-rating input {
+            display: none;
+        }
+
+        .star-rating label {
+            color: #ccc;
+            cursor: pointer;
+        }
+
+        .star-rating :checked ~ label {
+            color: #f90;
+        }
+
+        .star-rating label:hover,
+        .star-rating label:hover ~ label {
+            color: #fc0;
+        }
+
+        article {
+            background-color: #ffe;
+            box-shadow: 0 0 1em 1px rgba(0, 0, 0, .25);
+            color: #006;
+            font-family: cursive;
+            font-style: italic;
+            margin: 4em;
+            max-width: 30em;
+            padding: 2em;
+        }
+    </style>
+
+    <script type="text/javascript">
+        // 페이지가 로드될 때 리뷰 목록을 표시
+        $(document).ready(function () {
+            $("#reviews-box").html("");
+            showReview();
+            // 이미지 선택 시 미리보기 표시 및 서버에 업로드
+            $('#image').on('change', function () {
+                let images = $('#image')[0].files;
+                $('#image-preview').html('');
+                for (let i = 0; i < images.length; i++) {
+                    let image = images[i];
+                    let imgPreview = $('<img>');
+                    imgPreview.addClass('img-thumbnail');
+                    imgPreview.attr('src', URL.createObjectURL(image));
+                    $('#image-preview').append(imgPreview);
+                }
+            });
+            // 이미지 선택 취소(X 버튼 클릭) 시 input 값 초기화
+            $("#clear-image").click(function () {
+                $("#image").val(null);
+                $("#image-preview").empty();
+            });
+        });
+        // 리뷰 작성 함수
+        function makeReview() {
+            let title = $('#title').val();
+            let delivery = $('#delivery').val();
+            let review = $('#productReview').val();
+            let rating = $('input[name="rating"]:checked').val();
+            // FormData 객체 생성
+            let formData = new FormData();
+            let image = $('#image')[0].files[0];
+            formData.append('image', image);
+            // 다른 데이터도 FormData에 추가
+            formData.append('title_give', title);
+            formData.append('delivery_give', delivery);
+            formData.append('review_give', review);
+            formData.append('rating_give', rating);
+            // POST 요청을 통해 리뷰 데이터 전송
+            $.ajax({
+                type: "POST",
+                url: "/submit_review",
+                data: formData,
+                contentType: false,
+                processData: false,
+                success: function (response) {
+                    alert(response["msg"]);
+                    window.location.reload();
+                }
+            });
+        }
+        // 리뷰 표시 함수
+        function showReview() {
+            $.ajax({
+                type: "GET",
+                url: "/get_reviews",
+                data: {},
+                success: function (response) {
+                    console.log("Server response:", response);
+                    let reviews = response['all_reviews'];
+                    for (let i = 0; i < reviews.length; i++) {
+                        console.log("Processing review", i + 1);
+                        let title = reviews[i]['title'];
+                        let delivery = reviews[i]['delivery'];
+                        let review = reviews[i]['review'];
+                        let rating = reviews[i]['rating'];
+                        let timestamp = reviews[i]['timestamp'];
+                        let imageTags = "";
+                        for (let j = 0; j < reviews[i]['images'].length; j++) {
+                            const imagePath = reviews[i]['images'][j].replace('\\', '/');
+                            console.log(`Image path: ${imagePath}`);
+                            imageTags += `<img src="${imagePath}" alt="리뷰 이미지" class="review-image">`;
+                        }
+                        let temp_html =
+                            `<tr>
+                                <td>${title}</td>
+                                <td>${delivery}</td>
+                                <td>${review}</td>
+                                <td>${rating}</td>
+                                <td>${timestamp}</td>
+                                <td>${imageTags}</td>
+                                <td><button class="btn btn-danger" onclick="deleteReview('${timestamp}')">삭제</button></td>
+                            </tr>`;
+                        $('#reviews-box').append(temp_html);
+                    }
+                }
+            });
+        }
+        function deleteReview(timestamp) {
+            $.ajax({
+                type: "POST",
+                url: "/delete_review",
+                data: {timestamp: timestamp},
+                success: function (response) {
+                    alert(response["msg"]);
+                    window.location.reload();
+                },
+                error: function (response) {
+                    alert(response["msg"]);
+                }
+            });
+        }
+        $(document).on('click', '.review-image', function () {
+            let imagePath = $(this).attr('src');
+            $('#modalImage').attr('src', imagePath);
+            $('#imageModal').css('display', 'block');
+        });
+        $('.close').on('click', function () {
+            $('#imageModal').css('display', 'none');
+        });
+        $(window).on('click', function (event) {
+            if (event.target === $('#imageModal')[0]) {
+                $('#imageModal').css('display', 'none');
+            }
+        });
+    </script>
+</head>
+<body>
+<!-- 네비게이션 바 코드 추가 -->
+<nav class="navbar navbar-expand-lg bg-dark" data-bs-theme="dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="#">Navbar</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarColor02"
+                aria-controls="navbarColor02" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarColor02">
+            <ul class="navbar-nav me-auto">
+                <li class="nav-item">
+                    <a class="nav-link active" href="#">Home
+                        <span class="visually-hidden">(current)</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">Features</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">Pricing</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">About</a>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" role="button"
+                       aria-haspopup="true" aria-expanded="false">Dropdown</a>
+                    <div class="dropdown-menu">
+                        <a class="dropdown-item" href="#">Action</a>
+                        <a class="dropdown-item" href="#">Another action</a>
+                        <a class="dropdown-item" href="#">Something else here</a>
+                        <div class="dropdown-divider"></div>
+                        <a class="dropdown-item" href="#">Separated link</a>
+                    </div>
+                </li>
+            </ul>
+            <div class="navbar-collapse collapse">
+                <ul class="navbar-nav mx-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#"
+                           style="color: white; font-size: 24px; margin-left: -180px;">mAIster</a>
+                    </li>
+                </ul>
+            </div>
+            <form class="form-inline my-2 my-lg-0 ml-auto">
+                <input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search">
+                <button class="btn btn-secondary my-2 my-sm-0" type="submit">Search</button>
+            </form>
+        </div>
+</nav>
+<div class="container">
+    <div class="info">
+        <h1>Review</h1>
+        <p>다른 사람을 위해 리뷰를 남겨주세요!</p>
+
+        <div class="input-group mb-3">
+            <div class="input-group-prepend">
+                <span class="input-group-text">제목</span>
+            </div>
+            <input type="text" class="form-control" id="title">
+        </div>
+
+        <!-- 별점 선택 컴포넌트 -->
+        <div class="input-group mb-3">
+            <span class="input-group-text">별점</span>
+            <div class="star-rating">
+                <input type="radio" id="5-stars" name="rating" value="5"/>
+                <label for="5-stars" class="star">&#9733;</label>
+                <input type="radio" id="4-stars" name="rating" value="4"/>
+                <label for="4-stars" class="star">&#9733;</label>
+                <input type="radio" id="3-stars" name="rating" value="3"/>
+                <label for="3-stars" class="star">&#9733;</label>
+                <input type="radio" id="2-stars" name="rating" value="2"/>
+                <label for="2-stars" class="star">&#9733;</label>
+                <input type="radio" id="1-star" name="rating" value="1"/>
+                <label for="1-star" class="star">&#9733;</label>
+            </div>
+        </div>
+
+        <!-- 이미지 업로드 추가 (multiple 속성 추가) -->
+        <div class="input-group mb-3">
+            <div class="input-group-prepend">
+                <span class="btn btn-primary">이미지 업로드</span>
+            </div>
+            <input type="file" class="form-control" id="image" accept="image/*" multiple>
+        </div>
+
+        <!-- 이미지 미리보기를 위한 img 태그 추가 -->
+        <div id="image-preview">
+            <!-- 이미지가 여러 개일 수 있으므로 여러 개의 img 태그를 사용할 수 있습니다. -->
+        </div>
+
+        <!-- 이미지 모달 창 -->
+        <div id="imageModal" class="modal">
+            <span class="close">&times;</span>
+            <img class="modal-content" id="modalImage">
+        </div>
+
+        <!-- 이미지 삭제 버튼 추가 -->
+        <button type="button" id="clear-image" class="btn btn-danger">delete</button>
+
+        <div class="input-group mb-3">
+            <div class="input-group-prepend">
+                <span class="input-group-text">배송</span>
+            </div>
+            <select class="form-control" id="delivery">
+                <option value="매우 만족">매우 만족</option>
+                <option value="만족">만족</option>
+                <option value="보통">보통</option>
+                <option value="불만족">불만족</option>
+                <option value="매우 불만족">매우 불만족</option>
+            </select>
+        </div>
+        <div class="input-group mb-3">
+            <div class="input-group-prepend">
+                <span class="input-group-text">리뷰</span>
+            </div>
+            <textarea class="form-control" id="productReview" cols="30" rows="5"></textarea>
+        </div>
+        <div class="review">
+            <button id="submitReviewButton" onclick="makeReview()" type="button" class="btn btn-primary">리뷰 작성하기
+            </button>
+        </div>
+    </div>
+    <div class="reviews">
+        <table class="table table-striped">
+            <thead>
+            <tr>
+                <th scope="col">한줄평</th>
+                <th scope="col">배송</th>
+                <th scope="col">리뷰</th>
+                <th scope="col">별점</th>
+                <th scope="col">작성 시간</th>
+                <th scope="col">이미지</th>
+                <th scope="col">삭제</th>
+            </tr>
+            </thead>
+            <tbody id="reviews-box">
+            </tbody>
+        </table>
+    </div>
+</div>
+<div class="col-md-4">
+    <!-- 최근 본 상품 카드 -->
+    <div style="position: fixed; top: 100px; right: 0;">
+        <div class="card text-white bg-primary mb-3" style="max-width: 10rem;">
+            <div class="card-header">최근 본 상품</div>
+            <div class="card-body">
+                <h4 class=card-title" style="color: #343434;">최근 본 상품</h4>
+                <p class="card-text">최근 본 상품이 없습니다.</p>
+            </div>
+        </div>
+        <div class="card text-white bg-secondary mb-3" style="max-width: 10rem;">
+            <div class="card-header">찜한 상품</div>
+            <div class="card-body">
+                <h4 class="card-title" style="color: #535354;">내가 찜한 상품</h4>
+                <p class="card-text">찜한 상품이 없습니다.</p>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<div style="display: flex; justify-content: center;">
+    <ul class="pagination pagination-sm sketchy-pagination">
+        <li class="page-item disabled">
+            <a class="page-link" href="#">&laquo;</a>
+        </li>
+        <li class="page-item active">
+            <a class="page-link" href="#">1</a>
+        </li>
+        <li class="page-item">
+            <a class="page-link" href="#">2</a>
+        </li>
+        <li class="page-item">
+            <a class="page-link" href="#">3</a>
+        </li>
+        <li class="page-item">
+            <a class="page-link" href="#">4</a>
+        </li>
+        <li class="page-item">
+            <a class="page-link" href="#">5</a>
+        </li>
+        <li class="page-item">
+            <a class="page-link" href="#">&raquo;</a>
+        </li>
+    </ul>
+</div>
+
+
+</body>
+</html>
